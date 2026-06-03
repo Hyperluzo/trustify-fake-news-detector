@@ -1,8 +1,7 @@
 """
 =============================================================
-  Trustify v2.0 — Central Configuration
-  Authors: Chandan Upadhyay | Gaurav Maurya | Harshvardhan Vaishnav
-  JECRC University, Jaipur | 2025-26
+  Trustify v3.0 — Central Configuration
+  Authors: Gaurav Maurya
 =============================================================
   Set your API keys here OR as environment variables.
   Keys marked OPTIONAL work without configuration.
@@ -14,10 +13,8 @@ import os
 class Config:
     # ── Project Info ───────────────────────────────────────────
     PROJECT_NAME    = "Trustify"
-    VERSION         = "2.0.0"
-    AUTHORS         = ["Chandan Upadhyay", "Gaurav Maurya", "Harshvardhan Vaishnav"]
-    UNIVERSITY      = "JECRC University, Jaipur"
-    SESSION         = "2025-26"
+    VERSION         = "3.0.0"
+    AUTHORS         = ["Gaurav Maurya"]
 
     # ── Server ─────────────────────────────────────────────────
     HOST            = "0.0.0.0"
@@ -26,13 +23,13 @@ class Config:
 
     # ── API Keys (set here OR as environment variables) ────────
     # NewsAPI — free at newsapi.org (500 req/day free)
-    NEWS_API_KEY    = os.getenv("NEWS_API_KEY",    "9eaa22bd0d43476db35a1ceca58be45a")
+    NEWS_API_KEY    = os.getenv("NEWS_API_KEY")
 
     # SerpAPI — free tier at serpapi.com (100 searches/month free)
-    SERP_API_KEY    = os.getenv("SERP_API_KEY",    "01d26b1de7a119d2ec62f53613ae19e717f7547d3da02b1db3579835bc63931e")
+    SERP_API_KEY    = os.getenv("SERP_API_KEY")
 
     # Gemini — free at aistudio.google.com
-    GEMINI_API_KEY  = os.getenv("GEMINI_API_KEY",  "AIzaSyAxNnrsoPwuGaI-gFZAeZ4G7RNsoLdMr1w")
+    GEMINI_API_KEY  = os.getenv("GEMINI_API_KEY")
 
     # ── Paths ──────────────────────────────────────────────────
     BASE_DIR        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
