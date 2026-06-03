@@ -1,0 +1,38 @@
+# ============================================================
+#  Trustify v2.0 — Python Dependencies
+#  Authors: Chandan Upadhyay | Gaurav Maurya | Harshvardhan Vaishnav
+#  JECRC University, Jaipur | 2025-26
+# ============================================================
+#
+#  Install all:
+#    pip install -r requirements.txt
+#
+#  For public URL access (optional):
+#    pip install pyngrok
+
+# ── Web Framework ─────────────────────────────────────────────
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
+
+# ── HTTP Client (async) ───────────────────────────────────────
+aiohttp>=3.9.0
+httpx>=0.27.0
+
+# ── ML Core ───────────────────────────────────────────────────
+scikit-learn>=1.4.0
+xgboost>=2.0.0
+numpy>=1.26.0
+pandas>=2.2.0
+
+# ── Utilities ─────────────────────────────────────────────────
+pydantic>=2.6.0
+python-dotenv>=1.0.0
+
+# ── Optional: Public URL Tunnel ───────────────────────────────
+# pyngrok>=7.0.0
+
+# ── Optional: BERT/DistilBERT (advanced, needs GPU or slow CPU) ──
+# torch>=2.2.0
+# transformers>=4.40.0
+# sentence-transformers>=2.7.0

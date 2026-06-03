@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Trustify — Fake News Detector</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f7fa;--white:#fff;--border:#e2e8f0;
+  --text:#1a202c;--muted:#718096;
+  --blue:#3b82f6;--blue-dk:#2563eb;
+  --green:#16a34a;--green-bg:#f0fdf4;--green-bd:#bbf7d0;
+  --red:#dc2626;--red-bg:#fef2f2;--red-bd:#fecaca;
+  --yellow:#d97706;--yellow-bg:#fffbeb;--yellow-bd:#fde68a;
+  --purple:#7c3aed;--purple-bg:#f5f3ff;--purple-bd:#ddd6fe;
+  --r:10px;
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6}
+.page{max-width:720px;margin:0 auto;padding:0 20px 60px}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;padding:28px 0 24px;border-bottom:1px solid var(--border);margin-bottom:32px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-shield{width:38px;height:38px;background:var(--blue);border-radius:9px;display:grid;place-items:center;font-size:19px;flex-shrink:0}
+.logo-name{font-size:20px;font-weight:700}
+.logo-tag{font-size:12px;color:var(--muted);margin-top:1px}
+.status{display:flex;align-items:center;gap:7px;padding:6px 13px;border:1px solid var(--border);border-radius:999px;font-size:13px;color:var(--muted);background:var(--white)}
+.dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;flex-shrink:0}
+.dot.on{background:var(--green)}.dot.off{background:var(--red)}
+
+/* Mode tabs */
+.tabs{display:flex;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:4px;margin-bottom:20px}
+.tab{flex:1;padding:9px;text-align:center;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s}
+.tab.active{background:var(--blue);color:#fff}
+.tab:hover:not(.active){background:var(--bg);color:var(--text)}
+
+/* Input */
+.input-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.input-label{font-size:14px;font-weight:600;margin-bottom:10px;display:block}
+textarea{width:100%;min-height:110px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;color:var(--text);background:var(--bg);resize:vertical;outline:none;transition:border-color .2s;line-height:1.6}
+textarea:focus{border-color:var(--blue);background:var(--white)}
+textarea::placeholder{color:#a0aec0}
+.char-count{font-size:12px;color:var(--muted);text-align:right;margin-top:6px}
+
+/* Mode info bar */
+.mode-bar{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.mode-bar.fast{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8}
+.mode-bar.full{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d}
+
+/* Examples */
+.ex-label{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:8px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chip{padding:5px 12px;border:1px solid var(--border);border-radius:999px;font-size:12px;font-weight:500;cursor:pointer;background:var(--white);color:var(--text);transition:all .15s}
+.chip:hover{border-color:var(--blue);color:var(--blue)}
+.chip.f{border-color:var(--red-bd);color:var(--red);background:var(--red-bg)}
+.chip.r{border-color:var(--green-bd);color:var(--green);background:var(--green-bg)}
+
+/* Analyze button */
+.btn{width:100%;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s,transform .1s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover:not(:disabled){background:var(--blue-dk)}
+.btn:active:not(:disabled){transform:scale(.99)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+
+/* Loading */
+.loading{display:none;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:36px 24px;text-align:center;margin-bottom:20px}
+.loading.show{display:block}
+.spin{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-txt{font-size:14px;color:var(--muted)}
+.load-step{font-size:12px;color:#a0aec0;margin-top:4px}
+
+/* Error */
+.err{display:none;padding:14px 16px;background:var(--red-bg);border:1px solid var(--red-bd);border-radius:8px;color:var(--red);font-size:14px;margin-bottom:16px}
+.err.show{display:block}
+
+/* Result card */
+.result{display:none;background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+.result.show{display:block;animation:up .3s ease}
+.result.fake{border-color:var(--red);box-shadow:0 0 0 3px rgba(220,38,38,.08)}
+.result.real{border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.08)}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Verdict banner */
+.banner{padding:22px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
+.banner.fake{background:var(--red-bg);border-bottom:1px solid var(--red-bd)}
+.banner.real{background:var(--green-bg);border-bottom:1px solid var(--green-bd)}
+.vleft{display:flex;align-items:center;gap:14px}
+.vemoji{font-size:32px;line-height:1}
+.vtitle{font-size:22px;font-weight:700}
+.vtitle.fake{color:var(--red)}.vtitle.real{color:var(--green)}
+.vsub{font-size:12px;color:var(--muted);margin-top:3px}
+.cbox{text-align:right}
+.cnum{font-size:34px;font-weight:700;line-height:1}
+.cnum.fake{color:var(--red)}.cnum.real{color:var(--green)}
+.clbl{font-size:11px;color:var(--muted);margin-top:3px}
+.ctier{display:inline-block;margin-top:4px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600}
+.ctier.high{background:#dcfce7;color:#15803d}
+.ctier.mod{background:#fef9c3;color:#854d0e}
+.ctier.low{background:#f1f5f9;color:#64748b}
+
+/* Sections */
+.sec{padding:16px 22px;border-top:1px solid var(--border)}
+.sec-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+
+/* Prob bars */
+.prob{margin-bottom:10px}
+.prob-top{display:flex;justify-content:space-between;margin-bottom:5px}
+.prob-lbl{font-size:13px;font-weight:500}
+.prob-val{font-size:13px;font-weight:700}
+.prob-val.fake{color:var(--red)}.prob-val.real{color:var(--green)}
+.bar{height:8px;background:var(--bg);border-radius:999px;overflow:hidden}
+.bar-fill{height:100%;border-radius:999px;width:0;transition:width .9s cubic-bezier(.4,0,.2,1)}
+.bar-fill.fake{background:var(--red)}.bar-fill.real{background:var(--green)}
+
+/* 50/50 breakdown boxes */
+.split-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.split-box{border-radius:9px;padding:14px;border:1px solid}
+.split-box.ml{background:#eff6ff;border-color:#bfdbfe}
+.split-box.net{background:#f0fdf4;border-color:#bbf7d0}
+.split-box.fact{background:#fef3c7;border-color:#fde68a}
+.split-box.nlp{background:#f5f3ff;border-color:var(--purple-bd)}
+.split-box .sb-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.split-box .sb-nums{display:flex;gap:12px;margin-bottom:5px}
+.split-box .sb-num{text-align:center}
+.split-box .sb-val{font-size:16px;font-weight:700}
+.sb-val.fake{color:var(--red)}.sb-val.real{color:var(--green)}
+.split-box .sb-key{font-size:10px;color:var(--muted)}
+.split-box .sb-note{font-size:11px;color:var(--muted);line-height:1.4;margin-top:4px}
+.weight-pill{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(0,0,0,.07);color:var(--text);margin-left:auto}
+.status-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600}
+.status-pill.on{background:#dcfce7;color:#15803d}
+.status-pill.off{background:#f1f5f9;color:#94a3b8}
+
+/* Gemini badge */
+.gemini-box{padding:10px 13px;background:var(--purple-bg);border:1px solid var(--purple-bd);border-radius:8px;font-size:13px;color:#4c1d95;margin-top:8px}
+.gemini-box strong{font-weight:600}
+
+/* Sources */
+.src-list{display:flex;flex-direction:column;gap:7px}
+.src-item{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:var(--bg);border-radius:7px;font-size:12px}
+.src-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.src-dot.Supports{background:var(--green)}.src-dot.Contradicts{background:var(--red)}.src-dot.Neutral{background:#94a3b8}
+.src-body{flex:1;min-width:0}
+.src-title{font-weight:500;line-height:1.4}
+.src-meta{font-size:10px;color:var(--muted);margin-top:2px}
+.src-verd{margin-left:auto;flex-shrink:0;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px}
+.src-verd.Supports{background:var(--green-bg);color:var(--green)}
+.src-verd.Contradicts{background:var(--red-bg);color:var(--red)}
+.src-verd.Neutral{background:#f1f5f9;color:#64748b}
+
+/* Explanation */
+.expl{font-size:14px;color:var(--text);line-height:1.65;background:var(--bg);padding:13px 15px;border-radius:7px}
+.reasons{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.reason{font-size:12px;color:var(--muted);padding:5px 10px;background:var(--bg);border-radius:6px;display:flex;align-items:flex-start;gap:6px}
+.reason::before{content:'→';color:var(--blue);flex-shrink:0}
+
+/* Signals */
+.sigs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.sig{padding:3px 9px;border-radius:999px;font-size:11px;font-weight:500}
+.sig.bad{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)}
+.sig.good{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)}
+.sig.info{background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe}
+
+/* Fact error alert */
+.fact-alert{padding:11px 14px;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;font-size:13px;color:#92400e;margin-bottom:8px;display:flex;align-items:flex-start;gap:8px}
+.fact-alert strong{font-weight:600}
+
+/* History */
+.hist-sec{margin-top:28px}
+.hist-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.hist-title{font-size:15px;font-weight:600}
+.hist-cnt{background:var(--border);padding:2px 8px;border-radius:999px;font-size:11px;color:var(--muted);margin-left:7px}
+.btn-clr{font-size:12px;padding:5px 12px;background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--muted);font-family:inherit;transition:all .15s}
+.btn-clr:hover{border-color:var(--red);color:var(--red)}
+.hist-empty{text-align:center;padding:32px;color:var(--muted);background:var(--white);border:1px dashed var(--border);border-radius:var(--r);font-size:14px}
+.hist-list{display:flex;flex-direction:column;gap:8px}
+.hist-item{display:flex;align-items:center;gap:11px;padding:11px 15px;background:var(--white);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color .15s}
+.hist-item:hover{border-color:var(--blue)}
+.hbadge{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;font-size:14px;flex-shrink:0}
+.hbadge.fake{background:var(--red-bg)}.hbadge.real{background:var(--green-bg)}
+.hbody{flex:1;min-width:0}
+.htext{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hmeta{font-size:10px;color:var(--muted);margin-top:2px}
+.hconf{font-size:12px;font-weight:700;flex-shrink:0}
+.hconf.fake{color:var(--red)}.hconf.real{color:var(--green)}
+.hmode{font-size:9px;padding:2px 6px;border-radius:3px;background:var(--bg);color:var(--muted);margin-left:4px}
+
+footer{border-top:1px solid var(--border);padding:20px 0;text-align:center;color:var(--muted);font-size:12px;margin-top:40px}
+@media(max-width:500px){.split-grid{grid-template-columns:1fr}.banner{flex-direction:column;align-items:flex-start}.cbox{text-align:left}.chips{gap:5px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-shield">🛡️</div>
+    <div><div class="logo-name">Trustify</div><div class="logo-tag">Fake News Detector — JECRC University 2025-26</div></div>
+  </div>
+  <div class="status"><div class="dot" id="dot"></div><span id="stxt">Checking…</span></div>
+</header>
+
+<!-- Mode tabs -->
+<div class="tabs">
+  <div class="tab active" id="tabFast" onclick="setMode('fast')">⚡ Fast Check &nbsp;<span style="opacity:.65;font-size:11px">ML only</span></div>
+  <div class="tab" id="tabFull" onclick="setMode('full')">🌐 Full Verify &nbsp;<span style="opacity:.65;font-size:11px">ML + Internet + Gemini</span></div>
+</div>
+
+<!-- Input -->
+<div class="input-card">
+  <label class="input-label" for="inp">Enter any news headline or claim</label>
+  <textarea id="inp" maxlength="1500" placeholder="e.g. 'Narendra Modi is PM of America'  or  'RBI holds repo rate at 6.5%'  or  'ChatGPT was made by Google'…"></textarea>
+  <div class="char-count"><span id="cn">0</span> / 1500</div>
+</div>
+
+<!-- Mode info -->
+<div class="mode-bar fast" id="modeBar">
+  ⚡ <strong>Fast Check:</strong> Uses ML ensemble + Fact checker. Results in ~0.2 seconds.
+</div>
+
+<!-- Examples -->
+<div class="ex-label">Try an example:</div>
+<div class="chips">
+  <button class="chip f" data-t="Narendra Modi is prime minister of America">🇮🇳 Modi + America</button>
+  <button class="chip f" data-t="ChatGPT was made by Google">🤖 ChatGPT claim</button>
+  <button class="chip f" data-t="The capital of Australia is Sydney">🗺️ Wrong capital</button>
+  <button class="chip f" data-t="Aliens landed in Delhi yesterday and met government officials">👾 Alien story</button>
+  <button class="chip r" data-t="Federal Reserve raises interest rates by 25 basis points to combat inflation">📊 Finance real</button>
+  <button class="chip r" data-t="NASA James Webb Telescope captures deepest infrared image of the universe">🔭 NASA real</button>
+</div>
+
+<button class="btn" id="aBtn">🔍 Check This News</button>
+
+<!-- Loading -->
+<div class="loading" id="loadCard">
+  <div class="spin"></div>
+  <div class="load-txt" id="ltxt">Analyzing…</div>
+  <div class="load-step" id="lstep">Running ML ensemble</div>
+</div>
+
+<!-- Error -->
+<div class="err" id="errBox"></div>
+
+<!-- Result -->
+<div class="result" id="resultCard">
+
+  <!-- Banner -->
+  <div class="banner" id="banner">
+    <div class="vleft">
+      <div class="vemoji" id="vemoji">—</div>
+      <div><div class="vtitle" id="vtitle">—</div><div class="vsub" id="vsub">—</div></div>
+    </div>
+    <div class="cbox">
+      <div class="cnum" id="cnum">—</div>
+      <div class="clbl">Confidence</div>
+      <div class="ctier" id="ctier">—</div>
+    </div>
+  </div>
+
+  <!-- Fact error alert -->
+  <div id="factAlert" style="display:none" class="sec">
+    <div class="fact-alert" id="factAlertBox">
+      <span>⚠️</span><div id="factAlertText"></div>
+    </div>
+  </div>
+
+  <!-- Probability bars -->
+  <div class="sec">
+    <div class="sec-title">Overall Probability</div>
+    <div class="prob">
+      <div class="prob-top"><span class="prob-lbl">❌ Fake probability</span><span class="prob-val fake" id="fpct">—</span></div>
+      <div class="bar"><div class="bar-fill fake" id="fbar"></div></div>
+    </div>
+    <div class="prob">
+      <div class="prob-top"><span class="prob-lbl">✅ Real probability</span><span class="prob-val real" id="rpct">—</span></div>
+      <div class="bar"><div class="bar-fill real" id="rbar"></div></div>
+    </div>
+  </div>
+
+  <!-- 50/50 Breakdown -->
+  <div class="sec">
+    <div class="sec-title" id="breakdownTitle">How We Decided</div>
+    <div class="split-grid" id="splitGrid"></div>
+  </div>
+
+  <!-- Sources -->
+  <div class="sec" id="srcSec" style="display:none">
+    <div class="sec-title">🌐 Internet Sources Checked</div>
+    <div class="src-list" id="srcList"></div>
+  </div>
+
+  <!-- Explanation -->
+  <div class="sec">
+    <div class="sec-title">Why This Verdict?</div>
+    <div class="expl" id="expl">—</div>
+    <div class="reasons" id="reasons"></div>
+  </div>
+
+</div>
+
+<!-- History -->
+<div class="hist-sec">
+  <div class="hist-hdr">
+    <div class="hist-title">Recent checks <span class="hist-cnt" id="hcnt">0</span></div>
+    <button class="btn-clr" id="clrBtn">Clear</button>
+  </div>
+  <div class="hist-empty" id="hemp">No checks yet. Try analyzing a headline above.</div>
+  <div class="hist-list" id="hlist"></div>
+</div>
+
+</div><!-- /page -->
+
+<footer>Trustify — Chandan Upadhyay · Gaurav Maurya · Harshvardhan Vaishnav · JECRC University, Jaipur 2025-26</footer>
+
+<script>
+const g = id => document.getElementById(id);
+const API = location.origin;
+let mode = 'fast';
+const history = [];
+
+// Health
+async function ping() {
+  try {
+    const d = await (await fetch(`${API}/api/health`)).json();
+    if (d.model_loaded) { g('dot').className='dot on'; g('stxt').textContent='Ready'; }
+    else { g('dot').className='dot'; g('stxt').textContent='No model'; }
+  } catch { g('dot').className='dot off'; g('stxt').textContent='Offline'; }
+}
+
+// Mode switch
+function setMode(m) {
+  mode = m;
+  g('tabFast').classList.toggle('active', m==='fast');
+  g('tabFull').classList.toggle('active', m==='full');
+  const bar = g('modeBar');
+  if (m==='fast') {
+    bar.className='mode-bar fast';
+    bar.innerHTML='⚡ <strong>Fast Check:</strong> ML ensemble + Fact checker. Results in ~0.2 seconds.';
+  } else {
+    bar.className='mode-bar full';
+    bar.innerHTML='🌐 <strong>Full Verify:</strong> Searches internet → runs ML on articles → Gemini fact-check → 50% ML + 50% Internet. Takes 3-8 seconds.';
+  }
+}
+
+// Char counter & examples
+g('inp').oninput = () => g('cn').textContent = g('inp').value.length;
+document.querySelectorAll('.chip').forEach(c => {
+  c.onclick = () => { g('inp').value = c.dataset.t; g('cn').textContent = c.dataset.t.length; g('inp').focus(); };
+});
+
+// Loading steps
+const FAST_STEPS = ['Running ML ensemble…','Checking facts…','Computing NLP signals…','Building verdict…'];
+const FULL_STEPS = ['Searching internet for articles…','Running ML on fetched articles…','Gemini fact-checking…','Combining 50% ML + 50% Internet…','Building explanation…'];
+let stepTimer;
+function startLoad() {
+  g('loadCard').classList.add('show');
+  const steps = mode==='fast' ? FAST_STEPS : FULL_STEPS;
+  let i=0; g('lstep').textContent=steps[0];
+  stepTimer = setInterval(()=>{ i=(i+1)%steps.length; g('lstep').textContent=steps[i]; }, mode==='fast'?600:1800);
+}
+function stopLoad() { g('loadCard').classList.remove('show'); clearInterval(stepTimer); }
+
+// Analyze
+g('aBtn').onclick = analyze;
+g('inp').onkeydown = e => { if(e.ctrlKey && e.key==='Enter') analyze(); };
+
+async function analyze() {
+  const text = g('inp').value.trim();
+  if (!text || text.length<5) { showErr('Please enter a headline to check.'); return; }
+  g('resultCard').classList.remove('show');
+  g('errBox').classList.remove('show');
+  g('aBtn').disabled=true;
+  startLoad();
+  try {
+    const ep = mode==='fast' ? '/api/predict' : '/api/verify';
+    const res = await fetch(API+ep, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text, verify_online: mode==='full', use_llm: mode==='full'}),
+    });
+    const d = await res.json();
+    if (!res.ok||d.detail) { showErr(d.detail||'Analysis failed.'); return; }
+    render(d, text);
+    addHist(d, text);
+  } catch { showErr('Cannot reach backend on port 8000. Make sure it\'s running.'); }
+  finally { stopLoad(); g('aBtn').disabled=false; }
+}
+
+function render(d, text) {
+  const fake = d.is_fake;
+  const cls  = fake?'fake':'real';
+  const conf = d.confidence||0;
+  const fp   = d.fake_probability||0;
+  const rp   = d.real_probability||0;
+
+  g('resultCard').className = `result show ${cls}`;
+  g('banner').className     = `banner ${cls}`;
+  g('vemoji').textContent   = fake?'❌':'✅';
+  g('vtitle').textContent   = fake?'Fake News':'Real News';
+  g('vtitle').className     = `vtitle ${cls}`;
+
+  const bd = d.breakdown||{};
+  const internet = bd.internet_verification||{};
+  const isFullMode = internet.available && internet.source_type==='internet';
+  g('vsub').textContent = isFullMode
+    ? `ML (50%) + Internet articles + Gemini (50%)`
+    : `ML ensemble + Fact checker`;
+
+  g('cnum').textContent = conf+'%';
+  g('cnum').className   = `cnum ${cls}`;
+  const t = g('ctier');
+  if (conf>=80){t.textContent='High confidence';t.className='ctier high';}
+  else if(conf>=65){t.textContent='Moderate confidence';t.className='ctier mod';}
+  else{t.textContent='Low confidence';t.className='ctier low';}
+
+  g('fpct').textContent=fp+'%'; g('rpct').textContent=rp+'%';
+  setTimeout(()=>{ g('fbar').style.width=fp+'%'; g('rbar').style.width=rp+'%'; },80);
+
+  // Fact alert
+  const facts = d.fact_notes||[];
+  if (facts.length) {
+    g('factAlert').style.display='block';
+    g('factAlertBox').innerHTML=`<span>⚠️</span><div><strong>Fact check:</strong> ${esc(facts[0])}</div>`;
+  } else {
+    g('factAlert').style.display='none';
+  }
+
+  // 50/50 breakdown
+  buildBreakdown(d, isFullMode);
+
+  // Sources
+  const srcs = d.sources||[];
+  if (srcs.length) {
+    g('srcSec').style.display='block';
+    g('srcList').innerHTML = srcs.map(s=>`
+      <div class="src-item">
+        <div class="src-dot ${s.verdict}"></div>
+        <div class="src-body">
+          <div class="src-title">${esc(s.title)}</div>
+          <div class="src-meta">${esc(s.source)}</div>
+        </div>
+        <span class="src-verd ${s.verdict}">${s.verdict}</span>
+      </div>`).join('');
+  } else { g('srcSec').style.display='none'; }
+
+  // Explanation
+  g('expl').textContent = d.explanation||'—';
+  const reasons = d.reasoning||[];
+  g('reasons').innerHTML = reasons.slice(0,5).map(r=>`<div class="reason">${esc(r)}</div>`).join('');
+}
+
+function buildBreakdown(d, isFullMode) {
+  const bd = d.breakdown||{};
+  const ml  = bd.ml_model||{};
+  const net = bd.internet_verification||{};
+  const nlp = bd.nlp_signals||{};
+  const fc  = bd.fact_check||{};
+  const gemini = net.gemini;
+  const mla    = net.ml_on_articles;
+
+  g('breakdownTitle').textContent = isFullMode
+    ? 'How We Decided — 50% ML + 50% Internet'
+    : 'How We Decided';
+
+  const boxes = [];
+
+  // Box 1: ML ensemble
+  boxes.push(`
+    <div class="split-box ml">
+      <div class="sb-title">🤖 ML Ensemble <span class="weight-pill">${ml.weight||'50%'}</span></div>
+      <div class="sb-nums">
+        <div class="sb-num"><div class="sb-val fake">${ml.fake_probability||'—'}%</div><div class="sb-key">Fake</div></div>
+        <div class="sb-num"><div class="sb-val real">${ml.real_probability||'—'}%</div><div class="sb-key">Real</div></div>
+      </div>
+      <div class="sb-note">LR + Random Forest + XGBoost + Passive Aggressive · Confidence: ${ml.confidence||0}%</div>
+    </div>`);
+
+  // Box 2: Internet / Gemini
+  if (isFullMode) {
+    const gem = gemini ? `<br><strong>Gemini:</strong> ${gemini.verdict} (${gemini.fake_probability}% fake)` : '<br>Gemini: no key set';
+    const mlaNote = mla && mla.available ? `<br>ML on ${mla.articles_analyzed} articles: ${mla.fake_probability}% fake` : '';
+    boxes.push(`
+      <div class="split-box net">
+        <div class="sb-title">🌐 Internet + Gemini <span class="weight-pill">${net.weight||'50%'}</span></div>
+        <div class="sb-nums">
+          <div class="sb-num"><div class="sb-val fake">${net.fake_probability||'—'}%</div><div class="sb-key">Fake</div></div>
+          <div class="sb-num"><div class="sb-val real">${net.real_probability||'—'}%</div><div class="sb-key">Real</div></div>
+        </div>
+        <div class="sb-note">${net.sources_count||0} articles · ${net.supporting||0} support · ${net.contradicting||0} contradict${mlaNote}${gem}</div>
+      </div>`);
+  } else {
+    // Show NLP as second box for fast mode
+    boxes.push(`
+      <div class="split-box nlp">
+        <div class="sb-title">🔬 NLP Signals <span class="weight-pill">${nlp.weight||'35%'}</span></div>
+        <div class="sb-nums">
+          <div class="sb-num"><div class="sb-val fake">${nlp.fake_probability||'—'}%</div><div class="sb-key">Fake</div></div>
+          <div class="sb-num"><div class="sb-val real">${nlp.real_probability||'—'}%</div><div class="sb-key">Real</div></div>
+        </div>
+        <div class="sb-note">Sensationalism: ${nlp.sensationalism||'Low'} · Sentiment: ${nlp.sentiment||'—'}</div>
+      </div>`);
+  }
+
+  // Box 3: Fact check
+  boxes.push(`
+    <div class="split-box fact">
+      <div class="sb-title">📋 Fact Check <span class="status-pill ${fc.has_error?'on':'off'}">${fc.has_error?'Error found':'No errors'}</span></div>
+      <div class="sb-note">${fc.has_error
+        ? `⚠️ ${esc((fc.contradictions||[])[0]||'Factual error detected')}`
+        : '✅ No factual errors detected in world knowledge base'}</div>
+    </div>`);
+
+  // Box 4: NLP (only in full mode, otherwise already shown)
+  if (isFullMode) {
+    const sigs = (nlp.detected_signals||[]).slice(0,2).join(', ') || 'None';
+    boxes.push(`
+      <div class="split-box nlp">
+        <div class="sb-title">🔬 NLP Signals</div>
+        <div class="sb-note">Sensationalism: <strong>${nlp.sensationalism||'Low'}</strong> · Sentiment: ${nlp.sentiment||'—'}<br>Signals: ${esc(sigs)}</div>
+      </div>`);
+  }
+
+  g('splitGrid').innerHTML = boxes.join('');
+}
+
+// History
+function addHist(d, text) {
+  history.unshift({text: text.substring(0,80)+(text.length>80?'…':''), verdict:d.verdict, is_fake:d.is_fake, confidence:d.confidence, mode, time: new Date().toLocaleTimeString()});
+  if (history.length>20) history.pop();
+  renderHist();
+}
+function renderHist() {
+  const n = history.length;
+  g('hcnt').textContent = n;
+  if (!n) { g('hemp').style.display='block'; g('hlist').innerHTML=''; return; }
+  g('hemp').style.display='none';
+  g('hlist').innerHTML = history.map((h,i)=>`
+    <div class="hist-item" onclick="reuse(${i})">
+      <div class="hbadge ${h.is_fake?'fake':'real'}">${h.is_fake?'❌':'✅'}</div>
+      <div class="hbody">
+        <div class="htext">${esc(h.text)}</div>
+        <div class="hmeta">${h.verdict} · ${h.time}<span class="hmode">${h.mode}</span></div>
+      </div>
+      <div class="hconf ${h.is_fake?'fake':'real'}">${h.confidence}%</div>
+    </div>`).join('');
+}
+function reuse(i) { g('inp').value=history[i].text.replace(/…$/,''); g('cn').textContent=g('inp').value.length; window.scrollTo({top:0,behavior:'smooth'}); }
+g('clrBtn').onclick = () => { history.length=0; renderHist(); };
+
+function showErr(msg) { g('errBox').textContent=msg; g('errBox').classList.add('show'); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+ping();
+renderHist();
+</script>
+</body>
+</html>
