@@ -1,0 +1,13 @@
+# Don't upload these
+models/
+data/
+__pycache__/
+*.pkl
+*.pyc
+.env
+*.egg-info/
+dist/
+build/
+.DS_Store
+venv/
+env/
